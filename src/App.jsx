@@ -6,7 +6,7 @@ import SignaturePad from './components/SignaturePad';
 const API_BASE = '/api';
 
 function App() {
-  const [initData, setInitData] = useState({ pengawas: [], ujians: [], ruangs: [] });
+  const [initData, setInitData] = useState({ pengawas: [], ujians: [] });
   const [activeTab, setActiveTab] = useState('scan-peserta'); // 'scan-peserta' as default
   const [scannedStudents, setScannedStudents] = useState([]);
   const [assignedStudents, setAssignedStudents] = useState([]);
@@ -40,7 +40,6 @@ function App() {
   // ... rest of state ...
   const [formData, setFormData] = useState({
     ujian_id: '',
-    ruang_id: '',
     pengawas_id: '',
     mapel_id: '',
     mata_pelajaran_display: '',
@@ -98,7 +97,6 @@ function App() {
             sesi_name: jadwal.sesi_name,
             mulai_ujian: jadwal.mulai_ujian,
             ujian_berakhir: jadwal.ujian_berakhir,
-            ruang_id: jadwal.ruang_id,
             total_expected: jadwal.total_siswa.toString()
           }));
           setAssignedStudents(peserta);
@@ -120,7 +118,6 @@ function App() {
             sesi_name: '',
             mulai_ujian: '',
             ujian_berakhir: '',
-            ruang_id: '',
             total_expected: ''
           }));
         });
@@ -138,19 +135,14 @@ function App() {
     }
 
     if (activeTab === 'berita-acara') {
-      const room = initData.ruangs.find(r => r.name.toLowerCase() === decodedText.toLowerCase() || r.id == decodedText);
-      if (room) {
-        setFormData(prev => ({ ...prev, ruang_id: room.id }));
-      } else {
-        alert(`Ter-scan: ${decodedText}. Tidak ada ruang yang cocok.`);
-      }
+      // Logic for room scanning removed as rooms are no longer used.
+      alert(`Ter-scan: ${decodedText}.`);
     } else {
       // Scan Peserta logic with Backend
       try {
         const response = await axios.post(`${API_BASE}/scan-peserta`, {
           kode_peserta: decodedText,
-          ujian_id: formData.ujian_id,
-          ruang_id: formData.ruang_id
+          ujian_id: formData.ujian_id
         });
 
         // Handle Dual-Mode Feedback
@@ -165,7 +157,7 @@ function App() {
       }
     }
     setShowScanner(false);
-  }, [showLoginScanner, activeTab, initData.ruangs, formData.ujian_id, formData.ruang_id, handleLogin]);
+  }, [showLoginScanner, activeTab, formData.ujian_id, handleLogin]);
 
   useEffect(() => {
     if (assignedStudents.length > 0) {
@@ -550,22 +542,7 @@ function App() {
                   <input type="hidden" name="ujian_berakhir" value={formData.ujian_berakhir || ''} />
                 </div>
 
-                {/* 8. Ruang (Auto-filled) */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-slate-700">Ruang Ujian</label>
-                  <select
-                    name="ruang_id"
-                    value={formData.ruang_id || ''}
-                    onChange={handleChange}
-                    className="block w-full rounded-xl border-indigo-100 bg-indigo-50/30 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-3 text-base"
-                    required
-                  >
-                    <option value="">-- Pilih Ruang --</option>
-                    {initData.ruangs?.map(room => (
-                      <option key={room.id} value={room.id}>{room.name}</option>
-                    ))}
-                  </select>
-                </div>
+
               </div>
             </div>
 
@@ -574,7 +551,7 @@ function App() {
               {assignedStudents.length > 0 && (
                 <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                   <div className="bg-slate-50 p-4 border-b border-slate-200">
-                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Daftar Peserta Ruang Ini</h3>
+                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Daftar Peserta Ujian Ini</h3>
                   </div>
                   <div className="max-h-60 overflow-y-auto">
                     <table className="w-full text-left border-collapse">
