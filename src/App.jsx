@@ -45,8 +45,6 @@ function App() {
     mata_pelajaran_display: '',
     kelas: '',
     kelas_id: '',
-    sesi_id: '',
-    sesi_name: '',
     mulai_ujian: '',
     ujian_berakhir: '',
     total_expected: '',
@@ -93,8 +91,6 @@ function App() {
             mata_pelajaran_display: jadwal.mata_pelajaran,
             kelas: jadwal.kelas,
             kelas_id: jadwal.kelas_id,
-            sesi_id: jadwal.sesi_id,
-            sesi_name: jadwal.sesi_name,
             mulai_ujian: jadwal.mulai_ujian,
             ujian_berakhir: jadwal.ujian_berakhir,
             total_expected: jadwal.total_siswa.toString()
@@ -114,8 +110,6 @@ function App() {
             mata_pelajaran_display: '',
             kelas: '',
             kelas_id: '',
-            sesi_id: '',
-            sesi_name: '',
             mulai_ujian: '',
             ujian_berakhir: '',
             total_expected: ''
@@ -503,19 +497,6 @@ function App() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-                {/* 5. Sesi (Auto-filled) */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-slate-700">Sesi</label>
-                  <input
-                    type="text"
-                    value={formData.sesi_name || ''}
-                    readOnly
-                    placeholder="Auto-fill..."
-                    className="block w-full rounded-xl border-indigo-100 bg-indigo-50/30 shadow-sm py-3 text-base text-indigo-900 font-medium"
-                  />
-                  <input type="hidden" name="sesi_id" value={formData.sesi_id || ''} />
-                </div>
-
                 {/* 6. Mulai Ujian (Auto-filled) */}
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-slate-700">Mulai Ujian</label>
