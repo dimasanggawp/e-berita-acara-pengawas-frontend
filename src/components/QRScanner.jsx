@@ -3,6 +3,12 @@ import { Html5Qrcode } from 'html5-qrcode';
 
 const QRScanner = ({ onScan, onClose }) => {
     const scannerRef = useRef(null);
+    const onScanRef = useRef(onScan);
+
+    // Keep the ref in sync with the latest callback
+    useEffect(() => {
+        onScanRef.current = onScan;
+    }, [onScan]);
 
     useEffect(() => {
         const scannerId = "reader";
@@ -20,10 +26,10 @@ const QRScanner = ({ onScan, onClose }) => {
                 // Ensure it only triggers once
                 if (html5QrCode.isScanning) {
                     html5QrCode.stop().then(() => {
-                        onScan(decodedText);
+                        onScanRef.current(decodedText);
                     }).catch(err => {
                         console.error("Failed to stop scanner", err);
-                        onScan(decodedText);
+                        onScanRef.current(decodedText);
                     });
                 }
             }
@@ -38,7 +44,7 @@ const QRScanner = ({ onScan, onClose }) => {
                 }).catch(err => console.error("Failed to stop scanner", err));
             }
         };
-    }, [onScan]);
+    }, []); // No dependency on onScan — camera starts once and stays alive
 
     const handleFileUpload = (e) => {
         const file = e.target.files[0];

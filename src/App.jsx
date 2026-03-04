@@ -50,6 +50,10 @@ function App() {
     console.log("handleLogin called with NIY:", JSON.stringify(niy));
     if (!niy || !niy.trim()) {
       Swal.fire('Format Tidak Sesuai', 'QR Code tidak berisi NIY yang valid. Pastikan QR Code berisi angka NIY.', 'error');
+      isProcessingScan.current = false;
+      // Restart scanner by toggling off/on
+      setShowScanner(false);
+      setTimeout(() => setShowScanner(true), 300);
       return;
     }
     try {
@@ -72,6 +76,10 @@ function App() {
     } catch (err) {
       console.error("Login error:", err.response?.data);
       Swal.fire('Login Gagal', err.response?.data?.message || "Terjadi kesalahan saat verifikasi QR Code", 'error');
+      // Reset scan lock and restart scanner so camera works again
+      isProcessingScan.current = false;
+      setShowScanner(false);
+      setTimeout(() => setShowScanner(true), 300);
     }
   }, []);
 
