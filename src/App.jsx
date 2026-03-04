@@ -313,15 +313,26 @@ function App() {
     const sigBlob = await new Promise(resolve => sigCanvas.getCanvas().toBlob(resolve, 'image/png'));
 
     const data = new FormData();
+    const skipFields = ['actual_mapel_id', 'mata_pelajarans', 'mata_pelajaran_display', 'kelas', 'ruangan', 'sesi'];
     Object.keys(formData).forEach(key => {
+      if (skipFields.includes(key)) return;
       // If we are appending mapel_id, use the actual_mapel_id instead if it exists
       if (key === 'mapel_id' && formData.actual_mapel_id) {
         data.append(key, formData.actual_mapel_id);
-      } else if (key !== 'actual_mapel_id' && key !== 'mata_pelajarans' && key !== 'mata_pelajaran_display') {
-        data.append(key, formData[key]);
+      } else {
+        const val = formData[key];
+        // Skip null/undefined/empty values for nullable fields
+        if (val === null || val === undefined || val === 'null') {
+          return;
+        }
+        data.append(key, val);
       }
     });
     data.append('signature', sigBlob, 'signature.png');
+    // Debug: log all FormData entries
+    for (let [key, value] of data.entries()) {
+      console.log(`FormData: ${key} =`, value);
+    }
 
     try {
       await axios.post(`${API_BASE}/submit-report`, data, {
@@ -331,8 +342,15 @@ function App() {
         window.location.reload();
       });
     } catch (error) {
-      console.error(error);
-      Swal.fire('Gagal Menyimpan', 'Gagal mengirim data: ' + (error.response?.data?.message || error.message), 'error');
+      console.error('Submit error:', error);
+      console.error('Validation errors:', error.response?.data?.errors);
+      console.error('Response data:', error.response?.data);
+      const validationErrors = error.response?.data?.errors;
+      let errorMsg = error.response?.data?.message || error.message;
+      if (validationErrors) {
+        errorMsg = Object.entries(validationErrors).map(([field, msgs]) => `${field}: ${msgs.join(', ')}`).join('\n');
+      }
+      Swal.fire('Gagal Menyimpan', 'Gagal mengirim data:\n' + errorMsg, 'error');
     } finally {
       setSubmitting(false);
     }
