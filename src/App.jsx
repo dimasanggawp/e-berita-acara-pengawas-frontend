@@ -66,6 +66,9 @@ function App() {
       setIsLoggedIn(true);
       setShowWelcome(true);
       setFormData(prev => ({ ...prev, pengawas_id: res.data.user.id }));
+
+      // Re-fetch init data to get proctor-specific exams
+      fetchInitData();
     } catch (err) {
       console.error("Login error:", err.response?.data);
       Swal.fire('Login Gagal', err.response?.data?.message || "Terjadi kesalahan saat verifikasi QR Code", 'error');
@@ -110,33 +113,37 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
+  const fetchInitData = useCallback(() => {
     console.log("Fetching init-data from:", `${API_BASE}/init-data`);
-    axios.get(`${API_BASE}/init-data`)
+    return axios.get(`${API_BASE}/init-data`)
       .then(res => {
         console.log("Initial data loaded successfully:", res.data);
         setInitData(res.data);
 
-        // Auto-select the first available active Ujian if not already set
+        // Auto-select the first available active Ujian if not already set or it's a re-fetch
         if (res.data.ujians && res.data.ujians.length > 0) {
-          setFormData(prev => ({ ...prev, ujian_id: res.data.ujians[0].id }));
+          setFormData(prev => ({
+            ...prev,
+            ujian_id: prev.ujian_id || res.data.ujians[0].id
+          }));
         }
-
-        setLoading(false);
+        return res.data;
       })
       .catch(err => {
         console.error("Failed to load initial data:", err.message, err.response?.data);
         Swal.fire({
           title: 'Gagal Memuat Data',
-          text: `Gagal memuat data dari backend (${err.message}). Pastikan server Laravel berjalan di 127.0.0.1:8000`,
+          text: `Gagal memuat data dari backend (${err.message}).`,
           icon: 'error',
           confirmButtonColor: '#4f46e5'
         });
-        setLoading(false);
       });
-
-    fetchPresensi();
   }, []);
+
+  useEffect(() => {
+    fetchInitData().finally(() => setLoading(false));
+    fetchPresensi();
+  }, [fetchInitData]);
 
   useEffect(() => {
     if (formData.ujian_id && formData.pengawas_id) {
@@ -209,11 +216,14 @@ function App() {
 
   const handleScan = useCallback(async (decodedText) => {
     if (isProcessingScan.current) return;
+    const trimmedText = decodedText?.trim();
+    if (!trimmedText) return;
+
     isProcessingScan.current = true;
 
-    console.log("=== QR SCAN RESULT ===", JSON.stringify(decodedText), "length:", decodedText?.length);
+    console.log("=== QR SCAN RESULT ===", JSON.stringify(trimmedText), "length:", trimmedText?.length);
     if (showLoginScanner) {
-      handleLogin(decodedText);
+      handleLogin(trimmedText);
       return;
     }
 
@@ -224,7 +234,7 @@ function App() {
       // Scan Peserta logic with Backend
       try {
         const response = await axios.post(`${API_BASE}/scan-peserta`, {
-          kode_peserta: decodedText,
+          kode_peserta: trimmedText,
           ujian_id: formData.ujian_id,
           pengawas_id: formData.pengawas_id
         });
