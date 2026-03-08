@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Scanner } from '@yudiel/react-qr-scanner';
+import jsQR from 'jsqr';
 
 const QRScanner = ({ onScan, onClose }) => {
-    const scannerRef = useRef(null);
     const onScanRef = useRef(onScan);
 
     // Keep the ref in sync with the latest callback
@@ -10,55 +10,31 @@ const QRScanner = ({ onScan, onClose }) => {
         onScanRef.current = onScan;
     }, [onScan]);
 
-    useEffect(() => {
-        const scannerId = "reader";
-        if (!document.getElementById(scannerId)) return;
-
-        const html5QrCode = new Html5Qrcode(scannerId);
-        scannerRef.current = html5QrCode;
-
-        const config = { fps: 10 };
-
-        html5QrCode.start(
-            { facingMode: "environment" },
-            config,
-            (decodedText) => {
-                // Ensure it only triggers once
-                if (html5QrCode.isScanning) {
-                    html5QrCode.stop().then(() => {
-                        onScanRef.current(decodedText);
-                    }).catch(err => {
-                        console.error("Failed to stop scanner", err);
-                        onScanRef.current(decodedText);
-                    });
-                }
-            }
-        ).catch(err => {
-            console.error("Unable to start scanning.", err);
-        });
-
-        return () => {
-            if (scannerRef.current && scannerRef.current.isScanning) {
-                scannerRef.current.stop().then(() => {
-                    scannerRef.current.clear();
-                }).catch(err => console.error("Failed to stop scanner", err));
-            }
-        };
-    }, []); // No dependency on onScan — camera starts once and stays alive
-
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        const html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.scanFile(file, true)
-            .then(decodedText => {
-                onScan(decodedText);
-            })
-            .catch(err => {
-                console.error("Error scanning file", err);
-                alert("Gagal membaca QR Code dari file. Pastikan gambar jelas.");
-            });
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement("canvas");
+                const context = canvas.getContext("2d", { willReadFrequently: true });
+                canvas.width = img.width;
+                canvas.height = img.height;
+                context.drawImage(img, 0, 0, img.width, img.height);
+                const imageData = context.getImageData(0, 0, img.width, img.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+                if (code && code.data) {
+                    onScanRef.current(code.data);
+                } else {
+                    alert("Gagal membaca QR Code dari file. Pastikan gambar jelas.");
+                }
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
     };
 
     return (
@@ -76,9 +52,29 @@ const QRScanner = ({ onScan, onClose }) => {
 
                 <div className="p-6 space-y-4">
                     <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-slate-900 shadow-inner">
-                        <div id="reader" className="w-full h-full"></div>
+                        <div className="absolute inset-0 z-0">
+                            <Scanner
+                                onScan={(result) => {
+                                    if (result && result.length > 0) {
+                                        onScanRef.current(result[0].rawValue);
+                                    }
+                                }}
+                                onError={(error) => console.log(error?.message)}
+                                formats={['qr_code']}
+                                components={{
+                                    audio: false,
+                                    onOff: false,
+                                    torch: false,
+                                    zoom: false,
+                                    finder: false,
+                                }}
+                                styles={{
+                                    container: { width: '100%', height: '100%' },
+                                }}
+                            />
+                        </div>
                         {/* Scanning Overlay Effect */}
-                        <div className="absolute inset-0 border-2 border-indigo-500/30 pointer-events-none">
+                        <div className="absolute inset-0 border-2 border-indigo-500/30 pointer-events-none z-10">
                             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-2 border-indigo-500 rounded-2xl">
                                 <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-indigo-400 rounded-tl-md"></div>
                                 <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-indigo-400 rounded-tr-md"></div>

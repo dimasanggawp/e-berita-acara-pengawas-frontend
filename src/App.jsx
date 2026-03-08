@@ -175,12 +175,9 @@ function App() {
             kelas_id: jadwal.kelas_id,
             mulai_ujian: jadwal.mulai_ujian,
             ujian_berakhir: jadwal.ujian_berakhir,
-            total_expected: jadwal.total_siswa.toString()
+            total_expected: peserta.length.toString()
           }));
           setAssignedStudents(peserta);
-          // Recalculate absent if needed
-          const absent = jadwal.total_siswa - (parseInt(formData.total_present) || 0);
-          setFormData(prev => ({ ...prev, total_absent: absent >= 0 ? absent : 0 }));
         })
         .catch(err => {
           console.error("Assignment not found", err);
@@ -235,10 +232,7 @@ function App() {
       return;
     }
 
-    if (activeTab === 'berita-acara') {
-      // Logic for room scanning removed as rooms are no longer used.
-      Swal.fire('Mode Pemindaian Salah', `Fitur ini untuk scan peserta. Ter-scan: ${decodedText}.`, 'info');
-    } else {
+    if (activeTab === 'berita-acara' || activeTab === 'scan-peserta') {
       // Scan Peserta logic with Backend
       try {
         const response = await axios.post(`${API_BASE}/scan-peserta`, {
@@ -283,7 +277,7 @@ function App() {
   }, [showLoginScanner, activeTab, formData.ujian_id, handleLogin]);
 
   useEffect(() => {
-    if (assignedStudents.length > 0) {
+    if (assignedStudents.length >= 0) {
       // Hitung berapa banyak siswa di assignedStudents yang sudah ada di scannedStudents (presensi)
       const presentStudents = assignedStudents.filter(s =>
         scannedStudents.some(sc => sc.kode_peserta === s.nomor_peserta)
